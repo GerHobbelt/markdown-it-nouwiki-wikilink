@@ -1,15 +1,12 @@
-'use strict';
-/*jshint node:true*/
-/* global describe, it, before, beforeEach, after, afterEach */
-/*eslint-env mocha*/
+/* eslint-env mocha, es6 */
 
-var expect = require('chai').expect;
+let expect = require('chai').expect;
 
 describe('markdown-it-wikilink', function () {
 
-  it('test 1', function() {
-    var md = require('markdown-it')().use(require('../'));
-    var s, target;
+  it('test 1', function () {
+    let md = require('@gerhobbelt/markdown-it')().use(require('../'));
+    let s, target;
 
     s = '[page]()';
     target = '<p><a href="page">page</a></p>\n';
@@ -36,9 +33,9 @@ describe('markdown-it-wikilink', function () {
     expect(md.render(s)).to.equal(target);
   });
 
-  it('should add /wiki/ to the front of the link and .html to the back', function() {
-    var md = require('markdown-it')().use(require('../'), {"head": "/wiki/", "tail": ".html"});
-    var s, target;
+  it('should add /wiki/ to the front of the link and .html to the back', function () {
+    let md = require('@gerhobbelt/markdown-it')().use(require('../'), { head: '/wiki/', tail: '.html' });
+    let s, target;
 
     s = '[page]()';
     target = '<p><a href="/wiki/page.html">page</a></p>\n';
@@ -53,9 +50,9 @@ describe('markdown-it-wikilink', function () {
     expect(md.render(s)).to.equal(target);
   });
 
-  it('test 2', function() {
-    var md = require('markdown-it')().use(require('../'));
-    var s, target;
+  it('test 2', function () {
+    let md = require('@gerhobbelt/markdown-it')().use(require('../'));
+    let s, target;
 
     s = '[Example: StackEdit|StackEdit]()';
     target = '<p><a href="Example:%20StackEdit">StackEdit</a></p>\n';
@@ -74,9 +71,9 @@ describe('markdown-it-wikilink', function () {
     expect(md.render(s)).to.equal(target);
   });
 
-  it('test 3', function() {
-    var md = require('markdown-it')().use(require('../'), {"head": "wiki/", "tail": "", "atHead": "../", "atTail": "/wiki/"});
-    var s, target;
+  it('test 3', function () {
+    let md = require('@gerhobbelt/markdown-it')().use(require('../'), { head: 'wiki/', tail: '', atHead: '../', atTail: '/wiki/' });
+    let s, target;
 
     s = '[Test@Wiki]()';
     target = '<p><a href="../Wiki/wiki/Test">Test@Wiki</a></p>\n';
@@ -91,9 +88,9 @@ describe('markdown-it-wikilink', function () {
     expect(md.render(s)).to.equal(target);
   });
 
-  it('test 4', function() {
-    var md = require('markdown-it')().use(require('../'), {"head": "", "tail": "", "atHead": "../../", "atTail": "/wiki/"});
-    var s, target;
+  it('test 4', function () {
+    let md = require('@gerhobbelt/markdown-it')().use(require('../'), { head: '', tail: '', atHead: '../../', atTail: '/wiki/' });
+    let s, target;
 
     s = '[Test@NouText]()';
     target = '<p><a href="../../NouText/wiki/Test">Test@NouText</a></p>\n';

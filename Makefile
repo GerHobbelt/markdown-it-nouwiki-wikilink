@@ -1,10 +1,10 @@
-#
-# Copyright Adam Pritchard 2015
-# MIT License : http://adampritchard.mit-license.org/
-#
+PATH        := ./node_modules/.bin:${PATH}
 
-NPM_PACKAGE := $(shell node -e 'process.stdout.write(require("./package.json").name)')
-NPM_VERSION := $(shell node -e 'process.stdout.write(require("./package.json").version)')
+NPM_PACKAGE := $(shell support/getGlobalName.js package)
+NPM_VERSION := $(shell support/getGlobalName.js version)
+
+GLOBAL_NAME := $(shell support/getGlobalName.js global)
+BUNDLE_NAME := $(shell support/getGlobalName.js microbundle)
 
 TMP_PATH    := /tmp/${NPM_PACKAGE}-$(shell date +%s)
 
@@ -12,23 +12,33 @@ REMOTE_NAME ?= origin
 REMOTE_REPO ?= $(shell git config --get remote.${REMOTE_NAME}.url)
 
 CURR_HEAD   := $(firstword $(shell git show-ref --hash HEAD | cut -b -6) master)
-GITHUB_PROJ := https://github.com//01AutoMonkey/${NPM_PACKAGE}
+GITHUB_PROJ := https://github.com//GerHobbelt/${NPM_PACKAGE}
 
 
-all: test browserify
+build: lintfix bundle test coverage todo 
 
 lint:
-	./node_modules/.bin/eslint --reset .
+	eslint .
 
-test: lint
-	./node_modules/.bin/mocha -R spec
+lintfix:
+	eslint --fix .
+
+bundle:
+	-rm -rf ./dist
+	mkdir dist
+	microbundle --no-compress --target node --strict --name ${GLOBAL_NAME}
+	npx prepend-header 'dist/*js' support/header.js
+
+test:
+	mocha
 
 coverage:
-	rm -rf coverage
-	./node_modules/.bin/istanbul cover node_modules/.bin/_mocha
+	-rm -rf coverage
+	-rm -rf .nyc_output
+	cross-env NODE_ENV=test nyc mocha
 
-test-ci: lint
-	./node_modules/.bin/istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage
+report-coverage: lint coverage
+
 
 publish:
 	@if test 0 -ne `git status --porcelain | wc -l` ; then \
@@ -44,19 +54,29 @@ publish:
 		exit 128 ; \
 		fi
 	git tag ${NPM_VERSION} && git push origin ${NPM_VERSION}
-	npm publish ${GITHUB_PROJ}/tarball/${NPM_VERSION}
+	npm run pub
 
-browserify:
-	rm -rf ./dist
-	mkdir dist
-	# Browserify
-	( printf "/*! ${NPM_PACKAGE} ${NPM_VERSION} ${GITHUB_PROJ} @license MIT */" ; \
-		./node_modules/.bin/browserify ./ -s markdownitNouwikiWikiLink \
-		) > dist/markdown-it-nouwiki-wikilink.js
-	# Minify
-	./node_modules/.bin/uglifyjs dist/markdown-it-nouwiki-wikilink.js -b beautify=false,ascii-only=true -c -m \
-		--preamble "/*! ${NPM_PACKAGE} ${NPM_VERSION} ${GITHUB_PROJ} @license MIT */" \
-		> dist/markdown-it-nouwiki-wikilink.min.js
+todo:
+	@echo ""
+	@echo "TODO list"
+	@echo "---------"
+	@echo ""
+	grep 'TODO' -n -r ./ --exclude-dir=node_modules --exclude-dir=unicode-homographs --exclude-dir=.nyc_output --exclude-dir=dist --exclude-dir=coverage --exclude=Makefile 2>/dev/null || test true
 
-.PHONY: lint test coverage
-.SILENT: lint test
+clean:
+	-rm -rf ./coverage/
+	-rm -rf ./dist/
+	-rm -rf ./.nyc_output/
+
+superclean: clean
+	-rm -rf ./node_modules/
+	-rm -f ./package-lock.json
+
+prep: superclean
+	-ncu -a --packageFile=package.json
+	-npm install
+	-npm audit fix
+
+
+.PHONY: clean superclean prep publish lint lintfix test todo coverage report-coverage doc build gh-doc bundle
+.SILENT: help lint test todo
